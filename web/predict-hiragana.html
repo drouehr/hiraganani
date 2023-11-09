@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>hiraganani</title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand&display=swap" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <meta property="og:title" content="hiraganani">
+  <meta property="og:type" content="website">
+  <style>
+    body {
+      font-family: 'Quicksand', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 50px;
+      background-color: #313338;
+      color: white;
+      min-height: 100vh;
+    }
+
+    #toast {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #00ff2a7e;
+      color: #fff;
+      padding: 10px;
+      padding-left: 20px;
+      padding-right: 20px;
+      border-radius: 5px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    h1 {
+      margin-top: 5px;
+      text-align: center;
+      color: white;
+    }
+
+    .display-field {
+      display: flex;
+      font-size: 300%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin:20px;
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    .vert-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .small-text {
+      font-size: 0.8em;
+      text-align: center;
+      color: #ffffff;
+      background-color: #313338cb;
+      border-radius: 5px;
+    }
+
+    #drawingBoard {
+      border: 2px solid white;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><circle cx='18' cy='18' r='9' fill='white'/></svg>") 16 16, auto;
+    }
+
+    button {
+      font-family: 'Quicksand', sans-serif;
+      background-color: #4c77af;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      margin: 3px;
+    }
+    button:hover {
+      background-color: #3c5f8d;
+    }
+
+    .guide-tooltip {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      width: 50px;
+      height: 50px;
+      margin: 10px;
+      border-radius: 50%;
+      color: #fff;
+      cursor: pointer;
+    }
+    
+    .guide-icon {
+      font-size: 140%;
+      width: 50px;
+      height: 50px;
+      margin: 10px;
+      border-radius: 50%;
+      text-align: center;
+      color: #fff;
+      background-color: rgba(39, 39, 39, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .tooltip-text {
+      display: none;
+      position: absolute;
+      width: 250px;
+      bottom: 100%;
+      right: 10px;
+      padding: 15px;
+      background-color: rgba(39, 39, 39, 0.8);
+      color: #fff;
+      border-radius: 5px;
+      white-space: normal;
+      text-align: left;
+      word-wrap: break-word;
+    }
+
+    .guide-tooltip:hover .tooltip-text {
+      display: block;
+    }
+
+    .red-button {
+      background-color: rgba(255, 0, 0, 0.7);
+    }
+    .red-button:hover {
+      background-color: rgba(255, 0, 0, 0.6);
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="toast"></div>
+  <h1>hiraganani</h1>
+  <div class="vert-container"> 
+    <div>
+      <p class="small-text" id="romaji">-</p>
+      <div class="display-field" id="character">--</div>
+      <p class="small-text" id="certainty">--%</p>
+    </div>
+  </div>
+  <canvas id="drawingBoard" width="400" height="400"></canvas>
+  <div class="vert-container">
+    <div>
+      <button class="red-button" id="clearButton">clear</button>
+      <p class="small-text">z</p>
+    </div>
+  </div>
+  <div class="guide-tooltip">
+    <div class="guide-icon">?</div>
+    <div class="tooltip-text">start drawing and the model will guess a hiragana character based on what's on the canvas.</div>
+  </div>
+
+  <script>
+    let canvasUpdated = false;
+    document.addEventListener("DOMContentLoaded", function() {
+      setInterval(() => {
+        if(canvasUpdated){
+          requestPrediction();
+          canvasUpdated = false;
+        }
+      }, 500);
+    });
+
+    const characterMap = [["a", "あ"], ["i", "い"], ["u", "う"], ["e", "え"], ["o", "お"], ["ka", "か"], ["ki", "き"], ["ku", "く"], ["ke", "け"], ["ko", "こ"], ["sa", "さ"], ["shi", "し"], ["su", "す"], ["se", "せ"], ["so", "そ"], ["ta", "た"], ["chi", "ち"], ["tsu", "つ"], ["te", "て"], ["to", "と"], ["na", "な"], ["ni", "に"], ["nu", "ぬ"], ["ne", "ね"], ["no", "の"], ["ha", "は"], ["hi", "ひ"], ["fu", "ふ"], ["he", "へ"], ["ho", "ほ"], ["ma", "ま"], ["mi", "み"], ["mu", "む"], ["me", "め"], ["mo", "も"], ["ya", "や"], ["yu", "ゆ"], ["yo", "よ"], ["ra", "ら"], ["ri", "り"], ["ru", "る"], ["re", "れ"], ["ro", "ろ"], ["wa", "わ"], ["wo", "を"], ["n", "ん"]];
+    const canvas = document.getElementById('drawingBoard');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let lastPos;
+    
+    canvas.addEventListener('mousedown', function(e) {
+      drawing = true;
+      ctx.beginPath();
+      draw(e.offsetX, e.offsetY);
+      canvasUpdated = true;
+    });
+    
+    canvas.addEventListener('mousemove', function(e) {
+      if (!drawing) return;
+      draw(e.offsetX, e.offsetY);
+      canvasUpdated = true;
+    });
+    
+    canvas.addEventListener('mouseup', function() {
+      drawing = false;
+    });
+
+    canvas.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      drawing = true;
+      ctx.beginPath();
+      let pos = getTouchPos(e);
+      draw(pos.x, pos.y);
+      canvasUpdated = true;
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      if (!drawing) return;
+      let pos = getTouchPos(e);
+      draw(pos.x, pos.y);
+      canvasUpdated = true;
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      drawing = false;
+    }, { passive: false });
+
+    function getTouchPos(e) {
+      let rect = canvas.getBoundingClientRect();
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+
+    function draw(x, y) {
+      ctx.lineWidth = 15;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'white';
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    document.getElementById('clearButton').addEventListener('click', function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvasUpdated = false;
+      document.getElementById('character').textContent = '--';
+      document.getElementById('romaji').textContent = '-';
+      document.getElementById('certainty').textContent = '--%';
+    });
+
+    document.addEventListener('keydown', function(event) {
+      switch(event.key){
+        case 'z':
+        case 'Z':
+          document.getElementById('clearButton').click();
+          break;
+        default:
+          break;
+      }
+    });
+
+    function requestPrediction(){
+      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let data = imageData.data;
+    
+      let top = findTop(data, canvas.width, canvas.height);
+      let bottom = findBottom(data, canvas.width, canvas.height);
+      let left = findLeft(data, canvas.width, canvas.height);
+      let right = findRight(data, canvas.width, canvas.height);
+
+      let tempCanvas = document.createElement('canvas');
+      let tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = 127;
+      tempCanvas.height = 128;
+      tempCtx.fillStyle = 'black';
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+      let scaleFactor = 0.9;
+      let contentWidth = right - left;
+      let contentHeight = bottom - top;
+      let scaleWidth = tempCanvas.width * scaleFactor;
+      let scaleHeight = tempCanvas.height * scaleFactor;
+      let scale = Math.min(scaleWidth / contentWidth, scaleHeight / contentHeight);
+    
+      let offsetX = (tempCanvas.width - scale * contentWidth) / 2;
+      let offsetY = (tempCanvas.height - scale * contentHeight) / 2;
+    
+      tempCtx.drawImage(canvas, left, top, contentWidth, contentHeight, offsetX, offsetY, contentWidth * scale, contentHeight * scale);
+
+      let json = {
+        image: tempCanvas.toDataURL()
+      }
+      // console.log(`sent image data: ${JSON.stringify(json)}`);
+      fetch('/predict_hiragana', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(json)
+      })
+      .then(response => response.text())
+      .then(responseText => {
+        let characterIndex = parseInt(responseText.split(',')[0]);
+        document.getElementById('character').textContent = characterMap[characterIndex][1];
+        document.getElementById('romaji').textContent = characterMap[characterIndex][0];
+        document.getElementById('certainty').textContent = `${Number.parseFloat(responseText.split(',')[1])*100}%`;
+      })
+      .catch(error => {
+        console.error('error getting prediction:', error);
+        showToast(`✖ an error occurred`, 'rgba(255, 0, 0, 0.5)');
+      });
+    }
+
+    function showToast(message, backgroundColor = `#00ff2a7e`) {
+      toast.textContent = message;
+      toast.style.backgroundColor = `${backgroundColor}`;
+      toast.style.opacity = 1;
+      setTimeout(function() {
+        toast.style.opacity = 0;
+      }, 3000);
+    }
+
+    function findTop(data, width, height) {
+      for(let y = 0; y < height; y++) {
+        for(let x = 0; x < width; x++) { if (data[(y * width + x) * 4 + 3] > 0) return y;}
+      }
+      return 0;
+    }
+
+    function findBottom(data, width, height) {
+      for(let y = height - 1; y >= 0; y--) {
+        for(let x = 0; x < width; x++) { if (data[(y * width + x) * 4 + 3] > 0) return y;}
+      }
+      return height - 1;
+    }
+
+    function findLeft(data, width, height) {
+      for(let x = 0; x < width; x++) {
+        for(let y = 0; y < height; y++) { if (data[(y * width + x) * 4 + 3] > 0) return x;}
+      }
+      return 0;
+    }
+
+    function findRight(data, width, height) {
+      for(let x = width - 1; x >= 0; x--) {
+        for(let y = 0; y < height; y++) { if (data[(y * width + x) * 4 + 3] > 0) return x;}
+      }
+      return width - 1;
+    }
+
+  </script>
+  
+</body>
+
+</html>
