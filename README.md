@@ -4,7 +4,7 @@ hiragana ocr dataset and model
 
 a set of 11,384 127x128 grayscale PNG images of the 46 japanese [hiragana](https://en.wikipedia.org/wiki/Hiragana) characters (without [dakuten or handakuten](https://en.wikipedia.org/wiki/Dakuten_and_handakuten)).
 
-<img src="https://i.imgur.com/YTIAWga.png" width=500>
+<img src="https://i.imgur.com/2wtgknL.png" width=500>
 
 -----
 
