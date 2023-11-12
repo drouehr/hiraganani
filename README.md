@@ -99,8 +99,8 @@ a sample keras training script for an ocr model `train_test.py` is included alon
 the sample model is a CNN with 3 conv2d layers, trained over 24 epochs. 
 
 during training, image augmentation is performed randomly on each sample, including:
-  - rotation between ±22.5°
+  - rotation between ±4°
   - ±5% horizontal and vertical shift
-  - shear transformations between ±5°
+  - shear transformations between ±4°
   
 this model has an accuracy of 98.75% (395/400) on the test set. the training script also generates feature maps, accuracy/loss plots and a confusion matrix for each model. 

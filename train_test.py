@@ -11,7 +11,7 @@ from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
-dir = './training_images'
+dir = './hiragana'
 images = []
 labels = []
 
@@ -38,10 +38,10 @@ X = X.reshape(-1, 127, 128, 1)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 datagen = ImageDataGenerator(
-  rotation_range=22.5,
+  rotation_range=6.5,
   width_shift_range=0.05,
   height_shift_range=0.05,
-  shear_range=0.05,
+  shear_range=5,
   fill_mode='nearest'
 )
 datagen.fit(X_train)
@@ -66,7 +66,7 @@ model.add(Dense(46, activation='softmax'))
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 # train model
 # no datagen: model.fit(X_train, y_train, epochs=10, validation_data=(X_test, y_test), verbose=1)
-history = model.fit(datagen.flow(X_train, y_train, batch_size=128), steps_per_epoch=len(X_train)/128, epochs=24, validation_data=(X_test, y_test), verbose=1)
+history = model.fit(datagen.flow(X_train, y_train, batch_size=128), steps_per_epoch=len(X_train)/128, epochs=22, validation_data=(X_test, y_test), verbose=1)
 
 # save
 timestamp = time.strftime('%Y%m%d_%H%M%S')
@@ -76,11 +76,12 @@ report_dir = './reports/report_' + timestamp
 if not os.path.exists(report_dir):
   os.makedirs(report_dir)
 
-# feature maps
+# feature mapping on a random test image
 fmap_idxs = [0, 2, 4]
 outputs = [model.layers[i].output for i in fmap_idxs]
 mod = Model(inputs=model.inputs, outputs=outputs)
-img = X_test[0].reshape(1, 127, 128, 1)
+random_index = np.random.randint(0, len(X_test))
+img = X_test[random_index].reshape(1, 127, 128, 1)
 feature_maps = mod.predict(img)
 for layer_num, fmap in enumerate(feature_maps):
   ix = 1
